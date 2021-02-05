@@ -133,7 +133,6 @@ static void prepare_next_shadow(const struct cfi_shadow __rcu *prev,
 
 static void add_module_to_shadow(struct cfi_shadow *s, struct module *mod)
 {
-	unsigned long ptr;
 	unsigned long min_page_addr;
 	unsigned long max_page_addr;
 	unsigned long check = (unsigned long)mod->cfi_check;
@@ -149,17 +148,6 @@ static void add_module_to_shadow(struct cfi_shadow *s, struct module *mod)
 	max_page_addr = (unsigned long)mod->core_layout.base +
 				       mod->core_layout.text_size;
 	max_page_addr &= PAGE_MASK;
-
-	/* For each page, store the check function index in the shadow */
-	for (ptr = min_page_addr; ptr <= max_page_addr; ptr += PAGE_SIZE) {
-		int index = ptr_to_shadow(s, ptr);
-
-		if (index >= 0) {
-			/* Each page must only contain one module */
-			WARN_ON(s->shadow[index] != SHADOW_INVALID);
-			s->shadow[index] = (u16)check_index;
-		}
-	}
 }
 
 static void remove_module_from_shadow(struct cfi_shadow *s, struct module *mod)
