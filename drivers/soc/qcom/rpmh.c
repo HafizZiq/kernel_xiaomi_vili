@@ -1,8 +1,10 @@
 // SPDX-License-Identifier: GPL-2.0-only
 /* Copyright (c) 2016-2021, The Linux Foundation. All rights reserved. */
+/* Copyright (C) 2021 XiaoMi, Inc. */
 
 #include <linux/atomic.h>
 #include <linux/bug.h>
+#include <linux/delay.h>
 #include <linux/interrupt.h>
 #include <linux/jiffies.h>
 #include <linux/kernel.h>
@@ -233,7 +235,10 @@ static int __rpmh_write(const struct device *dev, enum rpmh_state state,
 	rpm_msg->msg.state = state;
 
 	if (state == RPMH_ACTIVE_ONLY_STATE) {
-		WARN_ON(irqs_disabled());
+		if (!oops_in_progress)
+		{
+			WARN_ON(irqs_disabled());
+		}
 		ret = rpmh_rsc_send_data(ctrlr_to_drv(ctrlr), &rpm_msg->msg);
 	} else {
 		/* Clean up our call by spoofing tx_done */
@@ -331,13 +336,20 @@ int rpmh_write(const struct device *dev, enum rpmh_state state,
 	rpm_msg.msg.num_cmds = n;
 
 	ret = __rpmh_write(dev, state, &rpm_msg);
-	if (ret)
-		return ret;
+	if (!oops_in_progress) {
+		if (ret)
+			return ret;
+	}
 
-	ret = wait_for_completion_timeout(&compl, RPMH_TIMEOUT_MS);
-	if (!ret) {
-		rpmh_rsc_debug(ctrlr_to_drv(ctrlr), &compl);
-		return -ETIMEDOUT;
+	if (!oops_in_progress) {
+		ret = wait_for_completion_timeout(&compl, RPMH_TIMEOUT_MS);
+		if (!ret) {
+			rpmh_rsc_debug(ctrlr_to_drv(ctrlr), &compl);
+			return -ETIMEDOUT;
+		}
+	}
+	else {
+		mdelay(100);
 	}
 
 	return 0;
