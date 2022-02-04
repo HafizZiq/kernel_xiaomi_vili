@@ -20,6 +20,7 @@ include $(srctree)/techpack/audio/config/konaauto.conf
 endif
 ifeq ($(CONFIG_ARCH_LAHAINA), y)
 include $(srctree)/techpack/audio/config/lahainaauto.conf
+export
 endif
 ifeq ($(CONFIG_ARCH_HOLI), y)
 include $(srctree)/techpack/audio/config/holiauto.conf
